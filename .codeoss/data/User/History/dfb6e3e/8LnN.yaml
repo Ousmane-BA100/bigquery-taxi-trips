@@ -1,0 +1,15 @@
+# Configuration pour le chargement de données NYC Yellow Taxi
+project_id: "nyc-yellow-trips"
+location: "US"
+bucket_name: "nyc-yellow-trips-data-buckets"
+gcs_folder: "dataset/trips/"
+log_folder: "from-git/logs/"
+destination_table: "nyc-yellow-trips.raw_yellowtrips.trips"
+source_file_column: "source_file"
+file_extension: ".parquet"
+
+# Configuration pour l'extraction
+file_prefix: "yellow_tripdata"
+file_extension: ".parquet"
+start_year: 2020
+delay_between_downloads: 1
