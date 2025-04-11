@@ -7,5 +7,29 @@
 # EXCLUSIONS POUR SUIVRE CERTAINES RESSOURCES
 ###################################
 !.gitignore
-!src/*
 !requirements.txt
+!dbt_project.yml          # Fichier principal de configuration DBT
+!models/                   # Modèles DBT (transformations)
+!models/**                 # Tous les fichiers à l'intérieur de models/
+!macros/                   # Macros DBT (fonctions réutilisables)
+!macros/**                 # Tous les fichiers à l'intérieur de macros/
+!seeds/                    # Données statiques (seeds)
+!seeds/**                  # Tous les fichiers à l'intérieur de seeds/
+!snapshots/                # Snapshots DBT (capture historique)
+!snapshots/**              # Tous les fichiers à l'intérieur de snapshots/
+!tests/                    # Tests DBT personnalisés
+!tests/**                  # Tous les fichiers à l'intérieur de tests/
+!schema.yml                # Fichier de métadonnées et de tests pour vos modèles DBT
+!profiles.yml              # **Attention : NE PAS versionner ce fichier si vous avez des informations sensibles**. Sinon, si vous le versionnez, assurez-vous de ne pas inclure de credentials sensibles.
+!src/                      # Code source supplémentaire pour le projet (si nécessaire)
+!src/**                    # Tous les fichiers à l'intérieur de src/
+
+###################################
+# EXCLUSIONS DE FICHIERS NON NÉCESSAIRES
+###################################
+# Fichiers de logs
+*.log
+
+# Dossiers temporaires
+*.dbt/                    # Dossier DBT temporaire
+*.cache/                  # Cache de DBT
