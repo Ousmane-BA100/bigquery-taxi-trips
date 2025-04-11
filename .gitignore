@@ -7,5 +7,5 @@
 # EXCLUSIONS POUR SUIVRE CERTAINES RESSOURCES
 ###################################
 !.gitignore
-!src/
+!src/*
 !requirements.txt
