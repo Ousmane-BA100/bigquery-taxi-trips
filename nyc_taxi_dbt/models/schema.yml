@@ -1,0 +1,298 @@
+version: 2
+
+models:
+  - name: stg_weather_data
+    description: Données météorologiques standardisées
+    columns:
+      - name: station
+        description: Identifiant unique de la station météo
+      - name: observation_time
+        description: Horodatage de l'observation météo
+      - name: temperature_f
+        description: Température en Fahrenheit
+      - name: temperature_c
+        description: Température en Celsius
+      - name: precipitation_inches
+        description: Précipitations en pouces
+      - name: visibility_miles
+        description: Visibilité en miles
+      - name: observation_hour
+        description: Heure arrondie de l'observation pour faciliter les jointures
+
+  - name: stg_yellow_trips
+    description: "Vue standardisée des courses de taxis jaunes"
+    columns:
+      - name: vendor_id
+        description: ID du fournisseur
+      - name: pickup_datetime
+        description: "Horodatage de la prise en charge"
+        tests:
+          - not_null
+      - name: dropoff_datetime
+        description: "Horodatage de la dépose"
+        tests:
+          - not_null
+      - name: trip_duration_seconds
+        description: Durée de la course en secondes
+        tests:
+          - not_null
+      - name: trip_distance
+        description: "Distance de la course en miles"
+        tests:
+          - not_null
+      - name: pickup_hour_rounded
+        description: Heure arrondie pour jointure avec les données météo
+
+  - name: stg_zone_to_station_mapping
+    description: Mapping entre les zones de taxi et les stations météo les plus proches par borough
+    columns:
+      - name: taxi_zone_id
+        description: ID de la zone de taxi
+        tests:
+          - not_null
+          - unique
+      - name: taxi_zone_name
+        description: Nom de la zone de taxi
+      - name: taxi_borough
+        description: Borough (quartier) de la zone de taxi
+      - name: station_id
+        description: ID de la station météo associée au borough
+        tests:
+          - not_null
+      - name: station_name
+        description: Nom de la station météo
+      - name: station_zone
+        description: Zone de la station météo
+
+  - name: int_weather_hourly
+    description: Données météo agrégées par heure
+    columns:
+      - name: station
+        description: ID de la station météo
+      - name: observation_hour
+        description: Heure de l'observation (arrondie)
+      - name: avg_temperature_f
+        description: Température moyenne en Fahrenheit
+      - name: precipitation_inches
+        description: Précipitations totales en pouces
+      - name: weather_condition
+        description: Classification des conditions météo
+
+  - name: int_yellow_trips_validated
+    description: Données des courses de taxi avec validation de qualité
+    columns:
+      - name: pickup_datetime
+        description: Date et heure de prise en charge
+        tests:
+          - not_null
+      - name: dropoff_datetime
+        description: Date et heure de dépose
+        tests:
+          - not_null
+      - name: trip_distance
+        description: Distance de la course en miles
+        tests:
+          - not_null
+      - name: data_quality_check
+        description: Indicateur de qualité des données
+      - name: missing_values_flag
+        description: Indicateur de valeurs manquantes
+
+  - name: fct_taxi_trips_with_weather
+    description: Fact table combinant courses de taxi et données météo
+    columns:
+      - name: pickup_datetime
+        description: Date et heure de prise en charge
+      - name: weather_station
+        description: Station météo associée à la zone de prise en charge
+      - name: weather_condition
+        description: Condition météo pendant la course
+
+  - name: agg_daily_trips
+    description: Agrégation quotidienne des courses de taxi
+    columns:
+      - name: trip_date
+        description: Date de la course
+      - name: total_trips
+        description: Nombre total de courses
+      - name: total_revenue
+        description: Revenu total des courses
+
+  - name: agg_weather_impact
+    description: Analyse de l'impact des conditions météo sur les courses
+    columns:
+      - name: pickup_date
+        description: Date de prise en charge
+      - name: weather_condition
+        description: Condition météo
+      - name: trip_count
+        description: Nombre de courses
+
+  - name: dim_taxi_zones
+    description: Dimension des zones de taxi avec métriques
+    columns:
+      - name: LocationID
+        description: ID unique de la zone
+      - name: pickup_trips
+        description: Nombre de courses partant de cette zone
+      - name: dropoff_trips
+        description: Nombre de courses arrivant dans cette zone
+
+  - name: agg_weather_by_location
+    description: Impact météo par zone géographique
+    columns:
+      - name: pickup_location_id
+        description: ID de la zone de prise en charge
+      - name: weather_condition
+        description: Condition météo
+      - name: total_trips
+        description: Nombre total de courses
+
+  - name: mart_daily_trips
+    description: "Agrégations quotidiennes des courses"
+    columns:
+      - name: trip_date
+        description: "Date de la course"
+        tests:
+          - not_null
+          - unique
+      
+      - name: total_trips
+        description: "Nombre total de courses pour la journée"
+        tests:
+          - not_null
+          - greater_than:
+              value: 0  # Assurer qu'il y a au moins 1 course
+      
+      - name: active_vendors
+        description: "Nombre de vendeurs actifs dans la journée"
+        tests:
+          - not_null
+          - greater_than:
+              value: 0  # Assurer qu'il y a au moins 1 vendeur actif
+
+      - name: total_passengers
+        description: "Nombre total de passagers"
+        tests:
+          - not_null
+          - greater_than:
+              value: 0  # Assurer qu'il y a des passagers dans les courses
+
+      - name: avg_distance
+        description: "Distance moyenne des courses"
+        tests:
+          - not_null
+          - greater_than:
+              value: 0  # Assurer que la distance moyenne est positive
+
+      - name: avg_duration_minutes
+        description: "Durée moyenne des courses en minutes"
+        tests:
+          - not_null
+          - greater_than:
+              value: 0  # Assurer que la durée moyenne est positive
+
+      - name: total_fare
+        description: "Montant total des courses"
+        tests:
+          - not_null
+          - greater_than:
+              value: 0  # Assurer qu'il y a des montants de courses positifs
+
+      - name: total_tips
+        description: "Total des pourboires"
+        tests:
+          - not_null
+          - greater_than:
+              value: 0  # Assurer qu'il y a des pourboires positifs
+
+      - name: total_revenue
+        description: "Revenu total des courses"
+        tests:
+          - not_null
+          - greater_than:
+              value: 0  # Assurer qu'il y a des revenus positifs
+
+      - name: avg_tip_percentage
+        description: "Pourcentage moyen de pourboire par rapport au tarif"
+        tests:
+          - not_null
+          - greater_than:
+              value: 0  # Assurer qu'il y a un pourcentage moyen valide
+
+      - name: invalid_trips
+        description: "Nombre de courses invalides"
+        tests:
+          - not_null
+          - greater_than:
+              value: 0  # Assurer qu'il y a au moins des courses invalides détectées
+
+  - name: mart_zone_analysis
+    description: "Analyse des courses par zone géographique"
+    columns:
+      - name: LocationID
+        description: "ID de la zone"
+        tests:
+          - not_null
+          - unique
+      
+      - name: Borough
+        description: "Arrondissement de la zone"
+        tests:
+          - not_null
+          
+      - name: Zone
+        description: "Nom de la zone"
+        tests:
+          - not_null
+          
+      - name: service_zone
+        description: "Type de zone de service"
+
+      - name: primary_zone_role
+        description: "Rôle principal de la zone (Pickup ou Dropoff)"
+
+      - name: pickup_trips
+        description: "Nombre de courses démarrant dans cette zone"
+        tests:
+          - not_null
+
+      - name: dropoff_trips
+        description: "Nombre de courses finissant dans cette zone"
+        tests:
+          - not_null
+
+      - name: total_trips
+        description: "Nombre total de courses liées à cette zone"
+        tests:
+          - not_null
+
+      - name: avg_pickup_fare
+        description: "Tarif moyen des courses démarrant dans cette zone"
+        tests:
+          - not_null
+
+      - name: avg_dropoff_fare
+        description: "Tarif moyen des courses finissant dans cette zone"
+        tests:
+          - not_null
+
+      - name: avg_pickup_distance
+        description: "Distance moyenne des courses démarrant dans cette zone"
+        tests:
+          - not_null
+
+      - name: avg_dropoff_distance
+        description: "Distance moyenne des courses finissant dans cette zone"
+        tests:
+          - not_null
+
+      - name: pickup_revenue
+        description: "Revenu total des courses démarrant dans cette zone"
+        tests:
+          - not_null
+
+      - name: dropoff_revenue
+        description: "Revenu total des courses finissant dans cette zone"
+        tests:
+          - not_null

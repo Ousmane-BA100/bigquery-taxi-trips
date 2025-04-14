@@ -30,4 +30,4 @@ SELECT
   
 FROM {{ ref('int_yellow_trips_validated') }}
 GROUP BY 1
-ORDER BY 1 DESC;
+

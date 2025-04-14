@@ -1,22 +1,50 @@
 {{ config(materialized='table') }}
 
-SELECT 
-  *,
-  -- Gestion des valeurs nulles dans les colonnes clés
-  COALESCE(trip_duration_seconds, 0) AS trip_duration_seconds, -- Remplacer NULL par 0
-  COALESCE(trip_distance, 0) AS trip_distance, -- Remplacer NULL par 0
-  COALESCE(fare_amount, 0) AS fare_amount, -- Remplacer NULL par 0
-  COALESCE(passenger_count, 1) AS passenger_count, -- Remplacer NULL par 1 (au moins un passager)
+SELECT
+  -- Colonnes originales provenant du modèle staging
+  vendor_id,
+  pickup_datetime,
+  dropoff_datetime,
+  
+  -- Colonnes avec gestion des valeurs nulles
+  COALESCE(passenger_count, 1) AS passenger_count,
+  COALESCE(trip_distance, 0) AS trip_distance,
+  ratecode_id,
+  store_and_fwd_flag,
+  pickup_location_id,
+  dropoff_location_id,
+  payment_type_id,
+  COALESCE(fare_amount, 0) AS fare_amount,
+  COALESCE(extra, 0) AS extra,
+  COALESCE(mta_tax, 0) AS mta_tax,
+  COALESCE(tip_amount, 0) AS tip_amount,
+  COALESCE(tolls_amount, 0) AS tolls_amount,
+  COALESCE(improvement_surcharge, 0) AS improvement_surcharge,
+  COALESCE(total_amount, 0) AS total_amount,
+  COALESCE(congestion_surcharge, 0) AS congestion_surcharge,
+  
+  -- Colonnes calculées
+  COALESCE(trip_duration_seconds, 0) AS trip_duration_seconds,
+  
+  -- Indicateurs temporels
+  pickup_date,
+  pickup_year,
+  pickup_month,
+  pickup_day,
+  pickup_hour,
+  pickup_weekday,
+  pickup_hour_rounded,
+  
   -- Indicateurs de qualité des données
-  CASE 
+  CASE
     WHEN trip_duration_seconds < 0 THEN 'Invalid trip duration'
-    WHEN trip_distance = 0 AND trip_duration_seconds > 0 THEN 'Zero distance with duration'
+    WHEN trip_distance = 0 AND trip_duration_seconds > 60 THEN 'Zero distance with duration'
     WHEN fare_amount < 0 THEN 'Negative fare'
     WHEN passenger_count < 1 THEN 'Invalid passenger count'
-    ELSE 'Valid' 
+    ELSE 'Valid'
   END as data_quality_check,
   
-  -- Indiquer si la ligne contient des valeurs manquantes
+  -- Indicateur valeurs manquantes
   CASE
     WHEN pickup_datetime IS NULL OR dropoff_datetime IS NULL THEN 'Missing timestamp'
     WHEN trip_distance IS NULL THEN 'Missing trip distance'
@@ -26,5 +54,3 @@ SELECT
   END as missing_values_flag
   
 FROM {{ ref('stg_yellow_trips') }}
-WHERE pickup_datetime IS NOT NULL 
-AND dropoff_datetime IS NOT NULL;

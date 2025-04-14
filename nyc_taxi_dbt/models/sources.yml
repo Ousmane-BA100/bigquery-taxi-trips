@@ -1,0 +1,78 @@
+version: 2
+
+sources:
+  - name: weather_data
+    description: Données météorologiques des stations de NYC
+    database: zeta-resource-456408-j3
+    schema: weather_data
+    tables:
+      - name: raw_weather_data
+        description: Mesures météorologiques horaires des stations NYC
+        columns:
+          - name: station
+            description: Identifiant unique de la station météo
+          - name: valid
+            description: Horodatage de l'observation météo
+          - name: station_name
+            description: Nom de la station météo
+          - name: station_zone
+            description: Zone où se trouve la station
+          - name: lat
+            description: Latitude de la station
+          - name: lon
+            description: Longitude de la station
+          - name: tmpf
+            description: Température en Fahrenheit
+          - name: p01i
+            description: Précipitations en pouces
+          - name: vsby
+            description: Visibilité en miles
+          - name: sknt
+            description: Vitesse du vent en noeuds
+          - name: gust
+            description: Rafales de vent en noeuds
+          - name: skyc1
+            description: Condition du ciel
+          - name: wxcodes
+            description: Codes météo
+
+  - name: nyc_taxi_data
+    description: Données des courses de taxi jaune de NYC
+    database: zeta-resource-456408-j3
+    schema: raw_yellow_taxi_trips
+    tables:
+      - name: trips
+        description: Données des courses de taxi jaune
+        columns:
+          - name: vendor_id
+            description: ID du fournisseur qui a enregistré la course
+          - name: pickup_datetime
+            description: Date et heure de prise en charge
+          - name: dropoff_datetime
+            description: Date et heure de dépose
+          - name: passenger_count
+            description: Nombre de passagers
+          - name: trip_distance
+            description: Distance parcourue en miles
+          - name: pickup_location_id
+            description: ID de la zone de prise en charge
+          - name: dropoff_location_id
+            description: ID de la zone de dépose
+          - name: fare_amount
+            description: Tarif de base
+          - name: tip_amount
+            description: Montant du pourboire
+          - name: total_amount
+            description: Montant total de la course
+
+      - name: taxi_zone
+        description: Zones géographiques des taxi NYC
+        columns:
+          - name: LocationID
+            description: ID unique de la zone
+          - name: Borough
+            description: Arrondissement de NYC
+          - name: Zone
+            description: Nom de la zone
+          - name: service_zone
+            description: Type de zone de service
