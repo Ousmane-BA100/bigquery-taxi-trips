@@ -220,14 +220,14 @@ def process_weather_data(client: storage.Client, config: Dict[str, Any], logger:
     return files_processed
 
 
-def main():
-    """Fonction principale qui orchestre le processus d'extraction et téléchargement des données météo."""
-    parser = argparse.ArgumentParser(description='Extraire et télécharger des données météo ASOS vers GCS')
-    parser.add_argument('--config', required=True, help='Chemin vers le fichier de configuration YAML')
-    args = parser.parse_args()
+def extract_weather_pipeline(config_path: str = None):
+    """La fonction qui effectue l'extraction des données météo avec un chemin de configuration donné."""
+    # Si pas de chemin spécifié, utiliser un chemin par défaut
+    if not config_path:
+        config_path = '/home/airflow/gcs/dags/config.yaml'
     
     # Charger la configuration avec la section 'extract_weather'
-    config = load_config(args.config, 'extract_weather')
+    config = load_config(config_path, 'extract_weather')
     
     # Vérifier les paramètres requis
     required_params = ['project_id', 'bucket_name', 'gcs_folder', 'log_folder']
@@ -253,6 +253,23 @@ def main():
         logger.error(f"Erreur inattendue : {str(e)}")
     finally:
         upload_log(client, config, log_stream, logger)
+
+
+def main(config_path: str = None):
+    """Fonction principale qui peut être appelée directement ou via ligne de commande."""
+    try:
+        if not config_path:
+            # Si exécuté depuis la ligne de commande
+            parser = argparse.ArgumentParser(description='Extraire et télécharger des données météo vers GCS')
+            parser.add_argument('--config', required=True, help='Chemin vers le fichier de configuration YAML')
+            args = parser.parse_args()
+            config_path = args.config
+        
+        # Exécuter le pipeline d'extraction météo
+        return extract_weather_pipeline(config_path)
+    except Exception as e:
+        logging.error(f"Erreur dans la fonction main: {str(e)}")
+        raise
 
 
 if __name__ == '__main__':

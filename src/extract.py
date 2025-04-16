@@ -23,7 +23,7 @@ def load_config(config_path: str, section: Optional[str] = None) -> Dict[str, An
         # Fusionner les paramètres globaux avec les paramètres spécifiques à la section
         # en excluant les autres sections
         section_config = {k: v for k, v in resolved_config.items() 
-                        if k != 'extract' and k != 'load'}
+                        if k != 'extract' and k != 'load' and k != 'extract_weather' and k != 'load_weather'}
         section_config.update(resolved_config[section])
         return section_config
     
@@ -218,14 +218,14 @@ def process_files(client: storage.Client, config: Dict[str, Any], files: List[Di
     return files_processed
 
 
-def main():
-    """Fonction principale qui orchestre le processus d'extraction et téléchargement."""
-    parser = argparse.ArgumentParser(description='Extraire et télécharger des données depuis une API vers GCS')
-    parser.add_argument('--config', required=True, help='Chemin vers le fichier de configuration YAML')
-    args = parser.parse_args()
+def extract_pipeline(config_path: str = None):
+    """La fonction qui effectue l'extraction avec un chemin de configuration donné."""
+    # Si pas de chemin spécifié, utiliser un chemin par défaut
+    if not config_path:
+        config_path = '/home/airflow/gcs/dags/config.yaml'
     
     # Charger la configuration avec la section 'extract'
-    config = load_config(args.config, 'extract')
+    config = load_config(config_path, 'extract')
     
     # Vérifier les paramètres requis
     required_params = ['project_id', 'bucket_name', 'gcs_folder', 'log_folder']
@@ -255,10 +255,29 @@ def main():
         files_processed = process_files(client, config, files, logger)
         
         logger.info(f"Téléchargement et upload vers GCS terminés! {files_processed} fichiers traités.")
+        return files_processed
     except Exception as e:
         logger.error(f"Erreur inattendue : {str(e)}")
+        raise
     finally:
         upload_log(client, config, log_stream, logger)
+
+
+def main(config_path: str = None):
+    """Fonction principale qui peut être appelée directement ou via ligne de commande."""
+    try:
+        if not config_path:
+            # Si exécuté depuis la ligne de commande
+            parser = argparse.ArgumentParser(description='Extraire et télécharger des données depuis une API vers GCS')
+            parser.add_argument('--config', required=True, help='Chemin vers le fichier de configuration YAML')
+            args = parser.parse_args()
+            config_path = args.config
+        
+        # Exécuter le pipeline d'extraction
+        return extract_pipeline(config_path)
+    except Exception as e:
+        logging.error(f"Erreur dans la fonction main: {str(e)}")
+        raise
 
 
 if __name__ == '__main__':

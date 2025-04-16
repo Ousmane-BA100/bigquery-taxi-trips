@@ -14,6 +14,8 @@
 !nyc_taxi_dbt/
 !nyc_taxi_dbt/**
 
+!dags/
+!dags/**
 
 !src/
 !src/**

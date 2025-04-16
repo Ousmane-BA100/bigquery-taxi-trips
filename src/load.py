@@ -1,3 +1,4 @@
+import os
 import logging
 import argparse
 from google.cloud import bigquery, storage
@@ -7,62 +8,77 @@ from concurrent.futures import ThreadPoolExecutor
 import yaml
 from typing import Dict, Set, List, Tuple, Any, Optional
 
-def setup_logging() -> io.StringIO:
-    """Configure et retourne un flux de journalisation avec affichage terminal."""
-    log_stream = io.StringIO()
+def setup_logging():
+    """Initialise le logging avec les handlers par défaut d'Airflow."""
+    # Formatter commun
+    formatter = logging.Formatter('%(asctime)s - %(levelname)s - %(message)s')
     
-    # Créer un gestionnaire pour la sortie console
-    console_handler = logging.StreamHandler()
-    console_handler.setLevel(logging.INFO)
-    console_format = logging.Formatter("%(asctime)s - %(levelname)s - %(message)s")
-    console_handler.setFormatter(console_format)
+    # Récupérer le logger root
+    logger = logging.getLogger()
+    logger.setLevel(logging.INFO)
     
-    # Créer un gestionnaire pour le flux StringIO
-    stream_handler = logging.StreamHandler(log_stream)
-    stream_handler.setLevel(logging.INFO)
-    stream_format = logging.Formatter("%(asctime)s - %(levelname)s - %(message)s")
-    stream_handler.setFormatter(stream_format)
+    # Nettoyage des anciens handlers pour éviter les doublons
+    if logger.hasHandlers():
+        logger.handlers.clear()
     
-    # Configurer le logger root avec les deux gestionnaires
-    root_logger = logging.getLogger()
-    root_logger.setLevel(logging.INFO)
-    root_logger.handlers = []  # Réinitialiser les gestionnaires existants
-    root_logger.addHandler(console_handler)
-    root_logger.addHandler(stream_handler)
-    
-    return log_stream
+    # Retourner simplement le logger sans ajouter de nouveaux handlers
+    return logger
 
 def load_config(config_path: str, section: Optional[str] = None) -> Dict[str, Any]:
     """Charge la configuration depuis un fichier YAML, éventuellement une section spécifique."""
-    with open(config_path, 'r') as file:
-        config = yaml.safe_load(file)
+    try:
+        with open(config_path, 'r') as file:
+            full_config = yaml.safe_load(file)
+            print(f"Configuration complète chargée: {list(full_config.keys())}")
+        
+        # Si une section spécifique est demandée
+        if section and section in full_config:
+            print(f"Extraction de la section '{section}'")
+            
+            # Extraire les paramètres globaux (qui ne sont pas des sections)
+            global_params = {k: v for k, v in full_config.items() 
+                           if not isinstance(v, dict)}
+            print(f"Paramètres globaux: {global_params}")
+            
+            # Créer une nouvelle configuration en combinant les deux
+            combined_config = global_params.copy()
+            combined_config.update(full_config[section])
+            print(f"Configuration combinée avant résolution: {combined_config}")
+            
+            # Résoudre les références
+            resolved_config = resolve_config_references(combined_config)
+            print(f"Configuration après résolution: {resolved_config}")
+            return resolved_config
+        
+        # Si aucune section n'est spécifiée, résoudre les références dans la config complète
+        print("Résolution des références dans la configuration complète")
+        return resolve_config_references(full_config)
     
-    # Résoudre les références dans la configuration
-    resolved_config = resolve_config_references(config)
-    
-    # Si une section spécifique est demandée, retourner uniquement cette section
-    if section and section in resolved_config:
-        # Fusionner les paramètres globaux avec les paramètres spécifiques à la section
-        # en excluant les autres sections
-        section_config = {k: v for k, v in resolved_config.items() 
-                        if k != 'extract' and k != 'load'}
-        section_config.update(resolved_config[section])
-        return section_config
-    
-    return resolved_config
+    except Exception as e:
+        print(f"Erreur lors du chargement de la configuration: {str(e)}")
+        import traceback
+        print(f"Traceback: {traceback.format_exc()}")
+        raise
 
 def resolve_config_references(config: Dict[str, Any]) -> Dict[str, Any]:
     """Résout les références dans la configuration, comme ${project_id}."""
+    # Extraire d'abord toutes les valeurs de premier niveau
+    global_values = {k: v for k, v in config.items() if isinstance(v, str)}
+    
+    # Convertir en YAML pour faciliter les remplacements de chaînes
     config_str = yaml.dump(config)
     
-    # Chercher et remplacer les références ${key} par leur valeur
-    for key, value in config.items():
-        if isinstance(value, str):
-            placeholder = f"${{{key}}}"
+    # Remplacer les références par leurs valeurs
+    for key, value in global_values.items():
+        placeholder = f"${{{key}}}"
+        if placeholder in config_str:
+            print(f"Remplacement de '{placeholder}' par '{value}'")
             config_str = config_str.replace(placeholder, value)
     
-    return yaml.safe_load(config_str)
-
+    # Reconvertir en dictionnaire
+    resolved_config = yaml.safe_load(config_str)
+    
+    return resolved_config
 def initialize_clients(config: Dict[str, Any]) -> Tuple[bigquery.Client, storage.Client]:
     """Initialise et retourne les clients BigQuery et Storage."""
     project_id = config['project_id']
@@ -197,45 +213,96 @@ def load_new_files(bq_client: bigquery.Client, storage_client: storage.Client,
     
     return successful_files
 
-def main():
-    """Fonction principale du script."""
-    parser = argparse.ArgumentParser(description='Charger des fichiers Parquet depuis GCS vers BigQuery')
-    parser.add_argument('--config', required=True, help='Chemin vers le fichier de configuration YAML')
-    parser.add_argument('--workers', type=int, default=4, help='Nombre de workers pour le chargement parallèle')
-    args = parser.parse_args()
-    
-    # Configuration et initialisation
-    log_stream = setup_logging()
+def load_pipeline(config_path: str = None):
     try:
-        # Charger la configuration avec la section 'load'
-        config = load_config(args.config, 'load')
-        
-        # Vérifier les paramètres requis
-        required_params = ['project_id', 'location', 'bucket_name', 'gcs_folder', 
-                          'destination_table', 'source_file_column', 'file_extension']
-        missing_params = [param for param in required_params if param not in config]
-        
-        if missing_params:
-            raise ValueError(f"Paramètres manquants dans la configuration: {', '.join(missing_params)}")
-        
-        # Initialiser les clients
-        bq_client, storage_client = initialize_clients(config)
-        
-        # Définir le nombre de workers
-        max_workers = config.get('max_workers', args.workers)
-        
-        # Exécution du chargement
-        load_new_files(bq_client, storage_client, config, max_workers=max_workers)
-        
-    except Exception as e:
-        logging.error(f"Erreur globale: {str(e)}")
-    finally:
-        # S'assurer que les logs sont téléchargés même en cas d'erreur
-        try:
-            upload_log_to_gcs(storage_client, config, log_stream)
-        except Exception as e:
-            print(f"Erreur lors du téléchargement des logs: {str(e)}")
-            print(log_stream.getvalue())  # Afficher les logs en cas d'échec du téléchargement
+        print(f"=== DÉBUT DE LOAD_PIPELINE ===")
+        print(f"Paramètre config_path reçu: {config_path}")
 
-if __name__ == "__main__":
+        if not config_path:
+            config_path = '/home/airflow/gcs/dags/config.yaml'
+            print(f"Aucun chemin spécifié, utilisation du chemin par défaut: {config_path}")
+
+        # ÉTAPE 1: Vérifier l'existence du fichier
+        print(f"ÉTAPE 1: Vérification du fichier de configuration")
+        if not os.path.exists(config_path):
+            print(f"ERREUR: Le fichier de configuration {config_path} n'existe pas!")
+            return
+        print(f"OK - Le fichier de configuration existe: {config_path}")
+        
+        # ÉTAPE 2: Lecture du fichier et log des résultats
+        print(f"ÉTAPE 2: Lecture du fichier de configuration")
+        try:
+            with open(config_path, 'r') as f:
+                content = f.read()
+                print(f"OK - Fichier lu, {len(content)} caractères")
+        except Exception as e:
+            print(f"ERREUR lors de la lecture: {str(e)}")
+            return
+            
+        # ÉTAPE 3: Parsing YAML
+        print(f"ÉTAPE 3: Parsing YAML")
+        try:
+            import yaml
+            full_config = yaml.safe_load(content)
+            print(f"OK - YAML parsé, sections: {list(full_config.keys())}")
+        except Exception as e:
+            print(f"ERREUR lors du parsing YAML: {str(e)}")
+            return
+            
+        # ÉTAPE 4: Initialisation des logs
+        print(f"ÉTAPE 4: Initialisation des logs")
+        try:
+            log_stream, logger = setup_logging()
+            print(f"OK - Logs initialisés")
+        except Exception as e:
+            print(f"ERREUR lors de l'initialisation des logs: {str(e)}")
+            return
+            
+        # ÉTAPE 5: Chargement de la configuration
+        print(f"ÉTAPE 5: Chargement de la configuration section 'load'")
+        try:
+            config = load_config(config_path, 'load')
+            print(f"OK - Configuration chargée")
+        except Exception as e:
+            print(f"ERREUR lors du chargement de la configuration: {str(e)}")
+            import traceback
+            print(f"Traceback: {traceback.format_exc()}")
+            return
+            
+        # ÉTAPE 6: Initialisation des clients
+        print(f"ÉTAPE 6: Initialisation des clients GCP")
+        try:
+            bq_client, storage_client = initialize_clients(config)
+            print(f"OK - Clients initialisés")
+        except Exception as e:
+            print(f"ERREUR lors de l'initialisation des clients: {str(e)}")
+            import traceback
+            print(f"Traceback: {traceback.format_exc()}")
+            return
+        
+        # Si vous arrivez ici, c'est que tout fonctionne jusqu'à l'étape 6
+        print(f"Configuration et initialisation réussies!")
+        return
+            
+    except Exception as e:
+        print(f"Exception globale: {str(e)}")
+        import traceback
+        print(f"Traceback: {traceback.format_exc()}")
+
+def main(config_path: str = None):
+    try:
+        if config_path is None and 'AIRFLOW_CTX_DAG_ID' not in os.environ:
+            # Execution en local
+            parser = argparse.ArgumentParser(description='Charger des fichiers depuis GCS vers BigQuery')
+            parser.add_argument('--config', required=True, help='Chemin vers le fichier de configuration YAML')
+            args = parser.parse_args()
+            config_path = args.config
+
+        return load_pipeline(config_path)
+
+    except Exception as e:
+        logging.error(f"Erreur dans la fonction main: {str(e)}")
+        raise
+
+if __name__ == '__main__':
     main()
