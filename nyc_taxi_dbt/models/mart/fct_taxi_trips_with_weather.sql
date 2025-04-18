@@ -39,7 +39,7 @@ SELECT
   t.missing_values_flag,
   
   -- Informations de la station météo associée à la zone de pickup
-  COALESCE(m.station_id, 'NYC') AS weather_station,
+  m.station_id AS weather_station,
   m.station_name,
   m.station_zone,
   
