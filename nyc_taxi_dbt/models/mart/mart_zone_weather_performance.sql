@@ -22,6 +22,7 @@ SELECT
 FROM {{ ref('fct_taxi_trips_with_weather') }}
 WHERE 
   pickup_location_id IS NOT NULL
+  AND weather_condition IS NOT NULL
 GROUP BY 
   pickup_location_id,
   weather_condition

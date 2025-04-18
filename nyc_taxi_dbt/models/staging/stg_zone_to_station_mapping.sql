@@ -20,12 +20,12 @@ WITH weather_stations AS (
 -- Table de mapping borough vers station (une seule station par borough)
 borough_station_mapping AS (
   SELECT * FROM UNNEST([
-    STRUCT('Queens' AS borough, 'KJFK' AS station_id),
-    STRUCT('Bronx' AS borough, 'KLGA' AS station_id),
-    STRUCT('Brooklyn' AS borough, 'KJFK' AS station_id),
-    STRUCT('Manhattan' AS borough, 'KNYC' AS station_id),
-    STRUCT('Staten Island' AS borough, 'KEWR' AS station_id),
-    STRUCT('EWR' AS borough, 'KEWR' AS station_id)
+    STRUCT('Queens' AS borough, 'JFK' AS station_id),
+    STRUCT('Bronx' AS borough, 'LGA' AS station_id),
+    STRUCT('Brooklyn' AS borough, 'JFK' AS station_id),
+    STRUCT('Manhattan' AS borough, 'NYC' AS station_id),
+    STRUCT('Staten Island' AS borough, 'EWR' AS station_id),
+    STRUCT('EWR' AS borough, 'EWR' AS station_id)
   ])
 )
 

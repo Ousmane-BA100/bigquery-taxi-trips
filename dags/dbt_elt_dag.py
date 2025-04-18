@@ -65,7 +65,7 @@ with DAG(
     dag_id="nyc_taxi_elt_pipeline",
     default_args=default_args,
     description="Pipeline ELT pour NYC Taxi et données météo",
-    schedule_interval='0 0 1 * *',  # Exécution le 1er jour de chaque mois à 00:00
+    schedule_interval='0 0 28 * *',  # Exécution le 28ème jour de chaque mois à 00:00
     catchup=False,
     tags=["nyc_taxi", "elt"]
 ) as dag:
@@ -140,9 +140,15 @@ with DAG(
         task_id='dbt_run',
         bash_command=(
             'cd /home/airflow/gcs/dags/nyc_taxi_dbt && '
-            'dbt run --profiles-dir /home/airflow/.dbt'
+            # on lit une Variable Airflow pour décider d'un full-refresh
+            'if [ "{{ var.value.full_refresh | default("false") }}" = "true" ]; then '
+            '  dbt run --profiles-dir /home/airflow/.dbt --full-refresh; '
+            'else '
+            '  dbt run --profiles-dir /home/airflow/.dbt; '
+            'fi'
         )
     )
+
 
     # Définition des dépendances (simplifiées)
     setup_environment >> download_configs >> update_profiles

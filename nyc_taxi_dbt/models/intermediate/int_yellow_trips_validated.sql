@@ -37,6 +37,8 @@ SELECT
   
   -- Indicateurs de qualité des données
   CASE
+    WHEN DATE(pickup_datetime) < '2022-01-01' OR DATE(dropoff_datetime) < '2022-01-01' THEN 'Date trop ancienne'
+    WHEN DATE(pickup_datetime) > DATE_SUB(CURRENT_DATE(), INTERVAL 2 MONTH) OR DATE(dropoff_datetime) > DATE_SUB(CURRENT_DATE(), INTERVAL 2 MONTH) THEN 'Date future ou trop récente'
     WHEN trip_duration_seconds < 0 THEN 'Invalid trip duration'
     WHEN trip_distance = 0 AND trip_duration_seconds > 60 THEN 'Zero distance with duration'
     WHEN fare_amount < 0 THEN 'Negative fare'
@@ -51,6 +53,17 @@ SELECT
     WHEN fare_amount IS NULL THEN 'Missing fare amount'
     WHEN passenger_count IS NULL THEN 'Missing passenger count'
     ELSE 'Complete'
-  END as missing_values_flag
+  END as missing_values_flag,
+  
+  -- Indicateur de date valide
+  CASE
+    WHEN DATE(pickup_datetime) < '2022-01-01' OR DATE(pickup_datetime) > DATE_SUB(CURRENT_DATE(), INTERVAL 2 MONTH) THEN FALSE
+    ELSE TRUE
+  END as is_valid_pickup_date,
+  
+  CASE
+    WHEN DATE(dropoff_datetime) < '2022-01-01' OR DATE(dropoff_datetime) > DATE_SUB(CURRENT_DATE(), INTERVAL 2 MONTH) THEN FALSE
+    ELSE TRUE
+  END as is_valid_dropoff_date
   
 FROM {{ ref('stg_yellow_trips') }}

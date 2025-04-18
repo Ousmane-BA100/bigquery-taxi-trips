@@ -1,5 +1,6 @@
 {{ config(
-  materialized='table',
+  materialized='incremental',
+  unique_key=['pickup_datetime', 'pickup_location_id', 'dropoff_location_id', 'vendor_id'],
   partition_by={
     "field": "pickup_date",
     "data_type": "date"
@@ -38,11 +39,9 @@ SELECT
   t.missing_values_flag,
   
   -- Informations de la station météo associée à la zone de pickup
-  -- (distance_miles a été supprimé car le mapping est fixe maintenant)
-  m.station_id AS weather_station,
+  COALESCE(m.station_id, 'NYC') AS weather_station,
   m.station_name,
   m.station_zone,
-  
   
   -- Données météo horaires pour cette station
   w.avg_temperature_f,
@@ -52,15 +51,20 @@ SELECT
   w.avg_wind_speed_knots,
   w.max_wind_gust_knots,
   w.weather_condition
-  
+
 FROM {{ ref('int_yellow_trips_validated') }} t
+
 -- Joindre les trajets avec le mapping zone -> station basé sur le lieu de pickup
 LEFT JOIN {{ ref('stg_zone_to_station_mapping') }} m
   ON t.pickup_location_id = m.taxi_zone_id
+
 -- Joindre avec les données météo horaires pour la station et l'heure correspondantes
 LEFT JOIN {{ ref('int_weather_hourly') }} w
-  
-  ON DATETIME_TRUNC(t.pickup_datetime, HOUR) = w.observation_hour -- Utilisation de DATETIME_TRUNC pour plus de robustesse
+  ON DATETIME_TRUNC(t.pickup_datetime, HOUR) = w.observation_hour
   AND m.station_id = w.station
--- Filtrer sur la qualité des données de trajet si nécessaire
-WHERE t.data_quality_check = 'Valid' 
+
+-- Filtrer sur la qualité des données + condition d'incrément
+WHERE t.data_quality_check = 'Valid'
+{% if is_incremental() %}
+  AND t.pickup_date > (SELECT MAX(pickup_date) FROM {{ this }})
+{% endif %}

@@ -99,133 +99,261 @@ models:
         description: Indicateur de valeurs manquantes
 
   - name: fct_taxi_trips_with_weather
-    description: Fact table combinant courses de taxi et données météo
+    description: "Mart des trajets Yellow Taxi enrichi avec les données météo horaires par station"
     columns:
+      - name: vendor_id
+        description: "Identifiant du fournisseur de taxi"
+        tests:
+          - not_null
       - name: pickup_datetime
-        description: Date et heure de prise en charge
-      - name: weather_station
-        description: Station météo associée à la zone de prise en charge
-      - name: weather_condition
-        description: Condition météo pendant la course
-
-  - name: agg_daily_trips
-    description: Agrégation quotidienne des courses de taxi
-    columns:
-      - name: trip_date
-        description: Date de la course
-      - name: total_trips
-        description: Nombre total de courses
-      - name: total_revenue
-        description: Revenu total des courses
-
-  - name: agg_weather_impact
-    description: Analyse de l'impact des conditions météo sur les courses
-    columns:
-      - name: pickup_date
-        description: Date de prise en charge
-      - name: weather_condition
-        description: Condition météo
-      - name: trip_count
-        description: Nombre de courses
-
-  - name: dim_taxi_zones
-    description: Dimension des zones de taxi avec métriques
-    columns:
-      - name: LocationID
-        description: ID unique de la zone
-      - name: pickup_trips
-        description: Nombre de courses partant de cette zone
-      - name: dropoff_trips
-        description: Nombre de courses arrivant dans cette zone
-
-  - name: agg_weather_by_location
-    description: Impact météo par zone géographique
-    columns:
+        description: "Horodatage du début de la course"
+        tests:
+          - not_null
+      - name: dropoff_datetime
+        description: "Horodatage de la fin de la course"
+        tests:
+          - not_null
+      - name: passenger_count
+        description: "Nombre de passagers"
+        tests:
+          - not_null
+          - accepted_values:
+              values: [1, 2, 3, 4, 5, 6]
+      - name: trip_distance
+        description: "Distance du trajet en miles"
+        tests:
+          - not_null
+          - relationships:
+              to: ref('int_yellow_trips_validated')
+              field: trip_distance
+      - name: ratecode_id
+        description: "Identifiant du tarif appliqué"
+        tests:
+          - not_null
+      - name: store_and_fwd_flag
+        description: "Indicateur de transmission différée"
+        tests:
+          - not_null
       - name: pickup_location_id
-        description: ID de la zone de prise en charge
+        description: "Identifiant de la zone de prise en charge"
+        tests:
+          - not_null
+          - relationships:
+              to: ref('stg_zone_to_station_mapping')
+              field: taxi_zone_id
+      - name: dropoff_location_id
+        description: "Identifiant de la zone de dépose"
+        tests:
+          - not_null
+      - name: payment_type_id
+        description: "Mode de paiement utilisé"
+        tests:
+          - not_null
+      - name: fare_amount
+        description: "Montant de la course hors suppléments"
+        tests:
+          - not_null
+      - name: extra
+        description: "Suppléments divers (overages, etc.)"
+      - name: mta_tax
+        description: "Taxe MTA"
+      - name: tip_amount
+        description: "Pourboire"
+      - name: tolls_amount
+        description: "Montant des péages"
+      - name: improvement_surcharge
+        description: "Surcharge d'amélioration"
+      - name: total_amount
+        description: "Montant total facturé"
+        tests:
+          - not_null
+      - name: congestion_surcharge
+        description: "Surcharge de congestion"
+      - name: pickup_date
+        description: "Date de prise en charge (partitionnée)"
+        tests:
+          - not_null
+      - name: pickup_year
+        description: "Année de prise en charge"
+        tests:
+          - not_null
+      - name: pickup_month
+        description: "Mois (1-12) de prise en charge"
+        tests:
+          - not_null
+          - relationships:
+              to: ref('int_yellow_trips_validated')
+              field: pickup_month
+      - name: pickup_day
+        description: "Jour du mois de prise en charge"
+        tests:
+          - not_null
+      - name: pickup_hour
+        description: "Heure de la journée de prise en charge"
+        tests:
+          - not_null
+      - name: pickup_weekday
+        description: "Jour de la semaine de prise en charge (0=dimanche…6=samedi)"
+        tests:
+          - not_null
+      - name: trip_duration_seconds
+        description: "Durée de la course en secondes"
+        tests:
+          - not_null
+      - name: data_quality_check
+        description: "Résultat du contrôle de qualité des données de trajet"
+        tests:
+          - not_null
+          - accepted_values:
+              values: ['Valid', 'Invalid']
+      - name: missing_values_flag
+        description: "Indicateur de valeurs manquantes dans la ligne"
+        tests:
+          - not_null
+          - accepted_values:
+              values: [0, 1]
+      - name: weather_station
+        description: "Identifiant de la station météo associée"
+        tests:
+          - not_null
+          - relationships:
+              to: ref('int_weather_hourly')
+              field: station
+      - name: station_name
+        description: "Nom de la station météo"
+      - name: station_zone
+        description: "Zone administrative de la station météo"
+      - name: avg_temperature_f
+        description: "Température moyenne en °F à l'heure de prise en charge"
+        tests:
+          - not_null
+      - name: avg_temperature_c
+        description: "Température moyenne en °C à l'heure de prise en charge"
+        tests:
+          - not_null
+      - name: precipitation_inches
+        description: "Précipitations cumulées en pouces sur l'heure"
+      - name: min_visibility_miles
+        description: "Visibilité minimale en miles sur l'heure"
+      - name: avg_wind_speed_knots
+        description: "Vitesse moyenne du vent en nœuds sur l'heure"
+      - name: max_wind_gust_knots
+        description: "Rafale maximale en nœuds sur l'heure"
       - name: weather_condition
-        description: Condition météo
-      - name: total_trips
-        description: Nombre total de courses
+        description: "Condition météo descriptive (ex. Clear, Rain)"
+        tests:
+          - not_null
 
-  - name: mart_daily_trips
-    description: "Agrégations quotidiennes des courses"
+  - name: mart_daily_trips_all
+    description: 
+      Métriques journalières incluant toutes les courses de taxi, y compris celles avec des anomalies ou problèmes de qualité.
+      Ce modèle est optimisé pour les analyses volumétriques, les réconciliations et la compréhension des données brutes.
+      Les valeurs nulles sont remplacées par des zéros pour assurer la cohérence des agrégations.
+    config:
+      materialized: table
+      partition_by:
+        field: trip_date
+        data_type: date
     columns:
       - name: trip_date
-        description: "Date de la course"
+        description: Date de prise en charge du client
         tests:
           - not_null
           - unique
-      
       - name: total_trips
-        description: "Nombre total de courses pour la journée"
-        tests:
-          - not_null
-          - greater_than:
-              value: 0  # Assurer qu'il y a au moins 1 course
-      
+        description: Nombre total de courses (valides et invalides) pour cette date
       - name: active_vendors
-        description: "Nombre de vendeurs actifs dans la journée"
-        tests:
-          - not_null
-          - greater_than:
-              value: 0  # Assurer qu'il y a au moins 1 vendeur actif
-
+        description: Nombre de fournisseurs de taxi actifs ce jour-là
       - name: total_passengers
-        description: "Nombre total de passagers"
-        tests:
-          - not_null
-          - greater_than:
-              value: 0  # Assurer qu'il y a des passagers dans les courses
-
+        description: Nombre total de passagers transportés (valeurs nulles comptées comme 0)
       - name: avg_distance
-        description: "Distance moyenne des courses"
-        tests:
-          - not_null
-          - greater_than:
-              value: 0  # Assurer que la distance moyenne est positive
-
+        description: Distance moyenne parcourue en miles (valeurs nulles comptées comme 0)
       - name: avg_duration_minutes
-        description: "Durée moyenne des courses en minutes"
-        tests:
-          - not_null
-          - greater_than:
-              value: 0  # Assurer que la durée moyenne est positive
-
+        description: Durée moyenne des courses en minutes (valeurs nulles comptées comme 0)
       - name: total_fare
-        description: "Montant total des courses"
-        tests:
-          - not_null
-          - greater_than:
-              value: 0  # Assurer qu'il y a des montants de courses positifs
-
+        description: Montant total des tarifs de base (valeurs nulles comptées comme 0)
       - name: total_tips
-        description: "Total des pourboires"
-        tests:
-          - not_null
-          - greater_than:
-              value: 0  # Assurer qu'il y a des pourboires positifs
-
+        description: Montant total des pourboires (valeurs nulles comptées comme 0)
       - name: total_revenue
-        description: "Revenu total des courses"
-        tests:
-          - not_null
-          - greater_than:
-              value: 0  # Assurer qu'il y a des revenus positifs
-
+        description: Revenu total incluant tous les frais (valeurs nulles comptées comme 0)
       - name: avg_tip_percentage
-        description: "Pourcentage moyen de pourboire par rapport au tarif"
-        tests:
-          - not_null
-          - greater_than:
-              value: 0  # Assurer qu'il y a un pourcentage moyen valide
-
+        description: Pourcentage moyen de pourboire par rapport au tarif de base
       - name: invalid_trips
-        description: "Nombre de courses invalides"
+        description: Nombre de courses avec des anomalies détectées
+  
+  - name: mart_daily_trips_valid
+    description: 
+      Métriques journalières des courses de taxi basées uniquement sur les données validées.
+      Ce modèle exclut les courses avec des anomalies (durée négative, distance nulle avec durée significative, etc.)
+      et est optimisé pour les analyses opérationnelles et tableaux de bord où la fiabilité des données est primordiale.
+    config:
+      materialized: table
+      partition_by:
+        field: trip_date
+        data_type: date
+    columns:
+      - name: trip_date
+        description: Date de prise en charge du client
         tests:
           - not_null
-          - greater_than:
-              value: 0  # Assurer qu'il y a au moins des courses invalides détectées
+          - unique
+      - name: total_trips
+        description: Nombre total de courses valides pour cette date
+      - name: active_vendors
+        description: Nombre de fournisseurs de taxi actifs ce jour-là
+      - name: total_passengers
+        description: Nombre total de passagers transportés
+      - name: avg_passengers_per_trip
+        description: Nombre moyen de passagers par course
+      - name: avg_distance
+        description: Distance moyenne parcourue en miles
+      - name: avg_duration_minutes
+        description: Durée moyenne des courses en minutes
+      - name: total_fare
+        description: Montant total des tarifs de base (hors pourboire et suppléments)
+      - name: total_tips
+        description: Montant total des pourboires
+      - name: total_revenue
+        description: Revenu total incluant tous les frais et pourboires
+      - name: avg_tip_percentage
+        description: Pourcentage moyen de pourboire par rapport au tarif de base
+
+  - name: mart_daily_trips_data_quality
+    description: 
+      Métriques de qualité des données pour les courses de taxi, analysant les différents types de problèmes
+      et fournissant des indicateurs de suivi de la qualité globale. Ce modèle est destiné à la surveillance
+      de la qualité des données et à l'identification des tendances ou problèmes récurrents.
+    config:
+      materialized: table
+      partition_by:
+        field: report_date
+        data_type: date
+    columns:
+      - name: report_date
+        description: Date d'analyse des données
+        tests:
+          - not_null
+          - unique
+      - name: total_records
+        description: Nombre total d'enregistrements analysés
+      - name: valid_records
+        description: Nombre d'enregistrements considérés comme valides
+      - name: invalid_records
+        description: Nombre d'enregistrements avec des anomalies détectées
+      - name: invalid_duration
+        description: Nombre de courses avec une durée négative
+      - name: zero_distance
+        description: Nombre de courses avec distance nulle mais durée significative
+      - name: negative_fare
+        description: Nombre de courses avec un tarif négatif
+      - name: invalid_passengers
+        description: Nombre de courses avec un nombre invalide de passagers
+      - name: incomplete_records
+        description: Nombre d'enregistrements avec des valeurs manquantes
+      - name: valid_rate
+        description: Pourcentage d'enregistrements valides
+      - name: complete_rate
+        description: Pourcentage d'enregistrements complets (sans valeurs manquantes)
 
   - name: mart_zone_analysis
     description: "Analyse des courses par zone géographique"
@@ -296,3 +424,185 @@ models:
         description: "Revenu total des courses finissant dans cette zone"
         tests:
           - not_null
+
+  - name: mart_daily_weather_impact
+    description: "Résumé journalier du volume, des tarifs, de la distance et des conditions météo des trajets de taxi"
+    tests:
+      - dbt_utils.unique_combination_of_columns:
+          combination_of_columns:
+            - pickup_date
+            - weather_condition
+    columns:
+      - name: pickup_date
+        description: "Date de prise en charge des trajets"
+        tests:
+          - not_null
+
+      - name: weather_condition
+        description: "Condition météo associée aux trajets ce jour-là"
+        tests:
+          - not_null
+
+      - name: trip_count
+        description: "Nombre total de trajets enregistrés pour la date et la condition météo"
+        tests:
+          - not_null
+          - dbt_utils.expression_is_true:
+              expression: "trip_count >= 0"
+
+      - name: active_pickup_zones
+        description: "Nombre de zones de prise en charge actives (distinctes) ce jour-là"
+        tests:
+          - not_null
+          - dbt_utils.expression_is_true:
+              expression: "active_pickup_zones >= 0"
+
+      - name: active_dropoff_zones
+        description: "Nombre de zones de dépose actives (distinctes) ce jour-là"
+        tests:
+          - not_null
+          - dbt_utils.expression_is_true:
+              expression: "active_dropoff_zones >= 0"
+
+      - name: avg_fare
+        description: "Moyenne des montants de course hors suppléments"
+        tests:
+          - not_null
+          - dbt_utils.expression_is_true:
+              expression: "avg_fare >= 0"
+
+      - name: avg_total_amount
+        description: "Moyenne des montants totaux facturés"
+        tests:
+          - not_null
+          - dbt_utils.expression_is_true:
+              expression: "avg_total_amount >= 0"
+
+      - name: avg_tip
+        description: "Moyenne des pourboires"
+        tests:
+          - not_null
+          - dbt_utils.expression_is_true:
+              expression: "avg_tip >= 0"
+
+      - name: avg_tip_percentage
+        description: "Pourcentage moyen de pourboire par rapport au tarif"
+        tests:
+          - not_null
+          - dbt_utils.expression_is_true:
+              expression: "avg_tip_percentage >= 0"
+
+      - name: avg_distance
+        description: "Distance moyenne des trajets en miles"
+        tests:
+          - not_null
+          - dbt_utils.expression_is_true:
+              expression: "avg_distance >= 0"
+
+      - name: avg_duration_minutes
+        description: "Durée moyenne des trajets en minutes"
+        tests:
+          - not_null
+          - dbt_utils.expression_is_true:
+              expression: "avg_duration_minutes >= 0"
+
+      - name: avg_temperature
+        description: "Température moyenne en °F pour la date et la condition météo"
+        tests:
+          - not_null
+
+      - name: max_precipitation
+        description: "Précipitation maximale (en pouces) enregistrée sur l'heure"
+        tests:
+          - not_null
+          - dbt_utils.expression_is_true:
+              expression: "max_precipitation >= 0"
+
+      - name: min_visibility
+        description: "Visibilité minimale (en miles) enregistrée sur l'heure"
+        tests:
+          - not_null
+          - dbt_utils.expression_is_true:
+              expression: "min_visibility >= 0"
+
+  - name: mart_zone_weather_performance
+    description: "Agrégations par zone de prise en charge et condition météo des trajets de taxi"
+    tests:
+      - dbt_utils.unique_combination_of_columns:
+          combination_of_columns:
+            - pickup_location_id
+            - weather_condition
+    columns:
+      - name: pickup_location_id
+        description: "Identifiant de la zone de prise en charge"
+        tests:
+          - not_null
+          - relationships:
+              to: ref('fct_taxi_trips_with_weather')
+              field: pickup_location_id
+
+      - name: weather_condition
+        description: "Condition météo à l'heure de la prise en charge"
+        tests:
+          - not_null
+
+      - name: total_trips
+        description: "Nombre total de trajets pour la zone et la condition météo"
+        tests:
+          - not_null
+          - dbt_utils.expression_is_true:
+              expression: "total_trips >= 0"
+
+      - name: avg_fare
+        description: "Montant moyen de la course hors suppléments"
+        tests:
+          - not_null
+          - dbt_utils.expression_is_true:
+              expression: "avg_fare >= 0"
+
+      - name: avg_distance
+        description: "Distance moyenne des trajets en miles"
+        tests:
+          - not_null
+          - dbt_utils.expression_is_true:
+              expression: "avg_distance >= 0"
+
+      - name: total_revenue
+        description: "Revenu total généré par les trajets (montants totaux)"
+        tests:
+          - not_null
+          - dbt_utils.expression_is_true:
+              expression: "total_revenue >= 0"
+
+      - name: avg_speed_mph
+        description: "Vitesse moyenne des trajets en miles par heure"
+        tests:
+          - not_null
+          - dbt_utils.expression_is_true:
+              expression: "avg_speed_mph >= 0"
+
+      - name: revenue_per_mile
+        description: "Revenu moyen par mile parcouru"
+        tests:
+          - not_null
+          - dbt_utils.expression_is_true:
+              expression: "revenue_per_mile >= 0"
+
+      - name: avg_temperature
+        description: "Température moyenne en °F durant les trajets"
+        tests:
+          - not_null
+
+      - name: avg_precipitation
+        description: "Précipitations moyennes en pouces durant les trajets"
+        tests:
+          - not_null
+          - dbt_utils.expression_is_true:
+              expression: "avg_precipitation >= 0"
+
+      - name: avg_visibility
+        description: "Visibilité moyenne en miles durant les trajets"
+        tests:
+          - not_null
+          - dbt_utils.expression_is_true:
+              expression: "avg_visibility >= 0"

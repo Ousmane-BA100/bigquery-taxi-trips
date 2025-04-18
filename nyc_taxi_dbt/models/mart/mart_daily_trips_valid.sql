@@ -26,10 +26,6 @@ SELECT
   -- Calcul du pourcentage de pourboire
   AVG(tip_amount / NULLIF(fare_amount, 0)) * 100 as avg_tip_percentage,
   
-  -- Qualité des données
-  COUNT(CASE WHEN data_quality_check != 'Valid' THEN 1 END) as invalid_trips,
-  COUNT(CASE WHEN missing_values_flag != 'Complete' THEN 1 END) as incomplete_records
-  
 FROM {{ ref('int_yellow_trips_validated') }}
 WHERE data_quality_check = 'Valid'
 GROUP BY 1
