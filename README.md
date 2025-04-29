@@ -1,7 +1,7 @@
-🚀 **Pipeline d'analyse météo & Taxi NYC** 📊
+🚀 **Yellow Taxi MeteoRide: Analyse corrélative des conditions météorologiques et des trajets en taxi** 📊
 
 📝 **Présentation du Projet**
-Ce projet vise à analyser l’impact des conditions météorologiques sur plus de 100 000 000 de courses de taxi à New York. En exploitant un pipeline ELT sur GCP et une couche de visualisation Power BI, nous transformons des données brutes de trajets et de météos en insights actionnables pour optimiser la répartition des taxis et anticiper les pics de demande.
+Ce projet analyse la corrélation entre les conditions météorologiques et plus de 100 millions de courses de taxi à New York. En exploitant un pipeline ELT sur GCP et une couche de visualisation Power BI, nous transformons des données brutes de trajets et de météo en insights actionnables pour comprendre les patterns de mobilité urbaine en fonction des conditions climatiques. L'objectif est d'offrir une meilleure compréhension de l'influence météorologique sur les comportements de déplacement, permettant ainsi d'optimiser la répartition des taxis selon les conditions atmosphériques observées.
 
 ## Démo du Tableau de Bord
 
@@ -93,7 +93,9 @@ Weather API (AOS)   ──>│
   **Résultat** : pipeline ELT modulable et performant sur GCP
 
 ## Contact  
-Pour plus d'informations sur ce projet, veuillez me contacter sur LinkedIn : [François Vercellotti](https://www.linkedin.com/in/francois-vercellotti-3687492a8).
+Pour plus d'informations sur ce projet, veuillez me contacter sur LinkedIn : [François Vercellotti](https://www.linkedin.com/in/fran%C3%A7ois-vercellotti-3687492a8)
+
+
 
 ## Licence  
 Ce projet est sous licence MIT.
