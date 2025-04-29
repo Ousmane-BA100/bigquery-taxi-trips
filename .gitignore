@@ -9,6 +9,7 @@
 
 !.gitignore
 !requirements.txt
+!README.md
 
 # Inclure tous les fichiers du dossier DBT principal
 !nyc_taxi_dbt/
