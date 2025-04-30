@@ -1,4 +1,4 @@
-## 🚀 Yellow Taxi MeteoRide:  Analyse corrélative des conditions météorologiques et des trajets en taxi 📊
+##  Yellow Taxi MeteoRide:  Analyse corrélative des conditions météorologiques et des trajets en taxi
 
 ## 📝 Présentation du Projet
 Ce projet analyse la corrélation entre les conditions météorologiques et plus de 100 millions de courses de taxi à New York. En exploitant un pipeline ELT sur GCP et une couche de visualisation Power BI, nous transformons des données brutes de trajets et de météo en insights actionnables pour comprendre les patterns de mobilité urbaine en fonction des conditions climatiques. L'objectif est d'offrir une meilleure compréhension de l'influence météorologique sur les comportements de déplacement, permettant ainsi d'optimiser la répartition des taxis selon les conditions atmosphériques observées.
