@@ -1,0 +1,40 @@
+project_id: "your-gcp-project-id"
+bucket_name: "your-gcs-bucket-name"
+location: "US"
+log_folder: "logs/"
+delay_between_downloads: 1
+start_year: 2023
+file_prefix: "yellow_tripdata"
+file_extension: ".parquet"
+gcs_folder: "taxi_data/"
+start_date: "2023-01-01"
+
+extract:
+  fields:
+    - name: pickup_datetime
+    - name: dropoff_datetime
+    - name: passenger_count
+    - name: trip_distance
+    - name: PULocationID
+    - name: DOLocationID
+    - name: fare_amount
+
+load:
+  destination_table: "your_dataset.your_table"
+  source_file_column: "source_file"
+  file_extension: ".parquet"
+
+extract_weather:
+  stations:
+    - id: JFK
+      name: John F Kennedy
+      zone: queens
+    - id: LGA
+      name: LaGuardia
+      zone: queens
+  gcs_folder: "weather_data/"
+
+load_weather:
+  dataset_id: "weather_data"
+  table_id: "your_project.weather_data.raw_weather_data"
+  table_name: "raw_weather_data"

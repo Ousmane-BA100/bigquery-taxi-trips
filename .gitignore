@@ -24,6 +24,18 @@
 !src/
 !src/**
 
+
+!dockerfile
+!docker-compose.yml
+!config.yaml
+!logs/
+!logs/**
+!tmp/
+!tmp/**
+!.dbt/
+!.dbt/**
+
+
 ###################################
 # EXCLUSIONS SPÉCIFIQUES DANS DBT
 ###################################
