@@ -1,0 +1,12 @@
+nyc_taxi_dbt:
+  target: dev
+  outputs:
+    dev:
+      type: bigquery
+      method: service-account
+      project: your-gcp-project-id
+      dataset: nyc_taxi_dbt
+      threads: 2
+      timeout_seconds: 300
+      location: US
+      keyfile: /tmp/dbt_credentials/credentials.json

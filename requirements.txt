@@ -11,3 +11,5 @@ py4j==0.10.9.7
 pyarrow==19.0.0
 pyspark==3.5.4
 scikit-learn==1.6.1
+dbt-core==1.7.9
+dbt-bigquery==1.7.9
