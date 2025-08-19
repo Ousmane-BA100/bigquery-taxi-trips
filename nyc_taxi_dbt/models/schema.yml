@@ -1,0 +1,135 @@
+version: 2
+
+
+# Définition des modèles
+models:
+  - name: stg_weather_data
+    description: Données météorologiques standardisées
+    columns:
+      - name: station
+        description: Identifiant unique de la station météo
+      - name: observation_time
+        description: Horodatage de l'observation météo
+      - name: temperature_f
+        description: Température en Fahrenheit
+      - name: precipitation_inches
+        description: Précipitations en pouces
+      - name: visibility_miles
+        description: Visibilité en miles
+      - name: wind_speed_knots
+        description: Vitesse du vent en nœuds
+
+  - name: stg_yellow_trips
+    description: "Vue standardisée des courses de taxis jaunes"
+    columns:
+      - name: pickup_datetime
+        description: "Horodatage de la prise en charge"
+        tests:
+          - not_null
+      - name: dropoff_datetime
+        description: "Horodatage de la dépose"
+        tests:
+          - not_null
+      - name: trip_duration_seconds
+        description: Durée de la course en secondes
+      - name: trip_distance
+        description: "Distance de la course en miles"
+      - name: passenger_count
+        description: "Nombre de passagers"
+      - name: fare_amount
+        description: "Montant de la course"
+      - name: tip_amount
+        description: "Montant du pourboire"
+      - name: total_amount
+        description: "Montant total payé"
+
+  - name: int_weather_hourly
+    description: "Données météo agrégées par heure"
+    columns:
+      - name: station
+        description: ID de la station météo
+      - name: observation_hour
+        description: Heure de l'observation
+      - name: avg_temperature_f
+        description: Température moyenne en Fahrenheit
+      - name: total_precipitation
+        description: Précipitations totales en pouces
+      - name: avg_visibility_miles
+        description: Visibilité moyenne en miles
+      - name: avg_wind_speed_knots
+        description: Vitesse moyenne du vent en nœuds
+
+  - name: fct_taxi_trips_with_weather
+    description: "Mart des trajets Yellow Taxi avec données météo"
+    columns:
+      - name: trip_id
+        description: "Identifiant unique du trajet"
+        tests:
+          - not_null
+          - unique
+      - name: pickup_datetime
+        description: "Date et heure de prise en charge"
+        tests:
+          - not_null
+      - name: dropoff_datetime
+        description: "Date et heure de dépose"
+      - name: passenger_count
+        description: "Nombre de passagers"
+      - name: trip_distance
+        description: "Distance du trajet en miles"
+      - name: fare_amount
+        description: "Montant de la course"
+      - name: tip_amount
+        description: "Montant du pourboire"
+      - name: total_amount
+        description: "Montant total payé"
+      - name: weather_condition
+        description: "Condition météo au moment de la course"
+
+  - name: mart_daily_trips_all
+    description: "Résumé quotidien de toutes les courses de taxi"
+    columns:
+      - name: trip_date
+        description: "Date des courses"
+        tests:
+          - not_null
+      - name: total_trips
+        description: "Nombre total de courses"
+      - name: total_passengers
+        description: "Nombre total de passagers"
+      - name: total_revenue
+        description: "Revenu total généré"
+
+  - name: mart_daily_weather_impact
+    description: "Impact quotidien de la météo sur les courses de taxi"
+    columns:
+      - name: trip_date
+        description: "Date des courses"
+      - name: weather_condition
+        description: "Condition météo"
+      - name: avg_fare
+        description: "Moyenne des courses"
+      - name: total_trips
+        description: "Nombre total de courses"
+
+  - name: mart_zone_analysis
+    description: "Analyse des courses par zone géographique"
+    columns:
+      - name: zone
+        description: "Nom de la zone"
+      - name: total_trips
+        description: "Nombre total de courses"
+      - name: avg_fare
+        description: "Moyenne des courses"
+
+  - name: mart_zone_weather_performance
+    description: "Performance des zones selon les conditions météo"
+    columns:
+      - name: zone
+        description: "Nom de la zone"
+      - name: weather_condition
+        description: "Condition météo"
+      - name: avg_fare
+        description: "Moyenne des courses"
+      - name: total_trips
+        description: "Nombre total de courses"

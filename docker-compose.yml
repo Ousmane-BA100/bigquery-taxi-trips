@@ -1,0 +1,83 @@
+version: '3.8'
+
+services:
+  airflow:
+    image: apache/airflow:2.7.3-python3.10
+    container_name: airflow
+    restart: always
+    depends_on:
+      - custom_spark_airflow
+      - postgres
+    environment:
+      - AIRFLOW__CORE__EXECUTOR=LocalExecutor
+      - AIRFLOW__CORE__FERNET_KEY=49eNGcwAPLJdYs7tuNJkAKXruVreAOnT8mQYePR4uEg=
+      - AIRFLOW__CORE__DAGS_ARE_PAUSED_AT_CREATION=False
+      - AIRFLOW__CORE__LOAD_EXAMPLES=False
+      - AIRFLOW__WEBSERVER__EXPOSE_CONFIG=True
+      - AIRFLOW__DATABASE__SQL_ALCHEMY_CONN=postgresql+psycopg2://airflow:airflow@postgres/airflow
+      - GOOGLE_APPLICATION_CREDENTIALS=/tmp/dbt_credentials/credentials.json
+    volumes:
+      - ./dags:/opt/airflow/dags
+      - ./logs:/opt/airflow/logs
+      - ./plugins:/opt/airflow/plugins
+      - ./tmp/dbt_credentials:/tmp/dbt_credentials
+      - ./src:/opt/airflow/src
+      - ./config.yaml:/opt/airflow/dags/config.yaml
+      - ./nyc_taxi_dbt:/opt/airflow/nyc_taxi_dbt
+      - ./.dbt:/opt/airflow/.dbt
+      - ./tmp/dbt_credentials/credentials.json:/opt/airflow/credentials.json
+    ports:
+      - "8080:8080"
+    networks:
+      - my_network
+    command: >
+      bash -c '
+        pip install --upgrade pip && \
+        pip install "google-auth<2.0.0" "google-auth-oauthlib<0.5.0" && \
+        pip install "dbt-core==1.5.0" "dbt-bigquery==1.5.0" && \
+        airflow db init && \
+        airflow db upgrade && \
+        airflow users create \
+          --username admin \
+          --firstname Admin \
+          --lastname User \
+          --role Admin \
+          --email admin@example.com \
+          --password admin && \
+        (airflow webserver & airflow scheduler)
+      '
+
+  custom_spark_airflow:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: custom_spark_airflow
+    volumes:
+      - .:/app
+    environment:
+      - SPARK_HOME=/opt/spark
+      - PYSPARK_PYTHON=python3
+    tty: true
+    stdin_open: true
+    networks:
+      - my_network
+
+  postgres:
+    image: postgres:13
+    environment:
+      POSTGRES_USER: airflow
+      POSTGRES_PASSWORD: airflow
+      POSTGRES_DB: airflow
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    networks:
+      - my_network
+
+volumes:
+  airflow_logs:
+  airflow_plugins:
+  postgres_data:
+
+networks:
+  my_network:
+    driver: bridge

@@ -1,0 +1,21 @@
+nyc_taxi_dbt:
+  target: dev
+  outputs:
+    dev:
+      type: bigquery
+      method: service-account
+      project: trusty-anchor-468422-t9 #nyc-taxi-459009-468212  # Projet GCP corrigé
+      dataset: nyc_taxi_dbt    # Dataset de destination pour les modèles
+      threads: 2
+      timeout_seconds: 300
+      location: europe-west9
+      keyfile: "{{ env_var('GOOGLE_APPLICATION_CREDENTIALS') }}"
+      #keyfile: /opt/airflow/credentials.json  # Chez moi, c'est le bon chemin
+      
+      # Configuration des schémas source
+      # Ces schémas doivent correspondre aux références dans vos modèles dbt
+      # Assurez-vous que le compte de service a accès à ces datasets
+      # Note: Ajustez ces noms selon votre configuration actuelle dans GCP
+      datasets:
+        raw: raw_yellow_taxi_trips
+        weather: weather_data

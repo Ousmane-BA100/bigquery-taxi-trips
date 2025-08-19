@@ -1,0 +1,45 @@
+name: 'nyc_taxi_weather_analysis'
+version: '1.0.0'
+config-version: 2
+
+profile: 'nyc_taxi_dbt'
+
+
+model-paths: ["models"]
+analysis-paths: ["analyses"]
+test-paths: ["tests"]
+seed-paths: ["seeds"]
+macro-paths: ["macros"]
+snapshot-paths: ["snapshots"]
+
+target-path: "target"
+clean-targets:
+  - "target"
+  - "dbt_packages"
+
+models:
+  nyc_taxi_weather_analysis:
+    +materialized: view
+    
+    staging:
+      +materialized: view
+      +schema: staging
+      
+    intermediate:
+      +materialized: table
+      +schema: intermediate
+      
+    mart:
+      +materialized: table
+      +schema: mart
+
+tests:
+  +store_failures: true
+  +severity: error
+
+vars:
+  min_trip_distance: 0.1
+  min_trip_duration_seconds: 60
+  max_trip_duration_hours: 24
+  invalid_fare_threshold: 0
+  default_passenger_count: 1

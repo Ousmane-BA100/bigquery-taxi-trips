@@ -1,0 +1,56 @@
+###################################
+# IGNORER TOUT PAR DÉFAUT
+###################################
+*
+
+###################################
+# EXCLUSIONS POUR SUIVRE CERTAINES RESSOURCES
+###################################
+
+!.gitignore
+!requirements.txt
+!README.md
+
+# Inclure tous les fichiers du dossier DBT principal
+!nyc_taxi_dbt/
+!nyc_taxi_dbt/**
+
+!assets/
+!assets/**
+
+!dags/
+!dags/**
+
+!src/
+!src/**
+
+
+!dockerfile
+!docker-compose.yml
+!config.yaml
+!logs/
+!logs/**
+!tmp/
+!tmp/**
+!.dbt/
+!.dbt/**
+
+
+###################################
+# EXCLUSIONS SPÉCIFIQUES DANS DBT
+###################################
+
+# Dossiers temporaires de DBT à ignorer même s'ils sont dans nyc_taxi_dbt
+nyc_taxi_dbt/target/
+nyc_taxi_dbt/dbt_modules/
+nyc_taxi_dbt/.dbt/
+nyc_taxi_dbt/.pytest_cache/
+nyc_taxi_dbt/.mypy_cache/
+
+# Fichiers générés, logs ou de cache
+*.log
+*.pyc
+__pycache__/
+
+#Ignorer le dossier tmp/dbt_credentials
+/tmp/dbt_credentials

@@ -1,0 +1,20 @@
+version: 2
+
+sources:
+  - name: weather_data
+    description: Données météorologiques des stations de NYC
+    database: trusty-anchor-468422-t9 # nyc-taxi-459009-468212
+    schema: weather_data
+    tables:
+      - name: raw_weather_data
+        description: Mesures météorologiques horaires des stations NYC
+
+  - name: raw_yellow_taxi_trips
+    description: Données des courses de taxi jaune de NYC
+    database: trusty-anchor-468422-t9 # nyc-taxi-459009-468212
+    schema: raw_yellow_taxi_trips
+    tables:
+      - name: raw_taxi_data
+        description: Données des courses de taxi jaune
+      - name: taxi_zone
+        description: Zones géographiques des taxis NYC

@@ -1,0 +1,51 @@
+# Paramètres généraux
+project_id: "trusty-anchor-468422-t9" #"nyc-taxi-459009-468212"
+bucket_name: "nyc-taxi-bucket-ynov_3"
+location: "europe-west9"
+log_folder: "logs/"
+delay_between_downloads: 1
+start_year: 2023
+start_date: "2023-01-01"
+
+# Configuration des formats de fichiers
+file_formats:
+  parquet:
+    extension: ".parquet"
+    delimiter: ","  # Même si c'est du parquet, certains lecteurs peuvent avoir besoin d'un délimiteur
+  csv:
+    extension: ".csv"
+    delimiter: ","
+    encoding: "utf-8"
+
+# Configuration pour l'extraction des données de taxi
+extract:
+  file_prefix: "yellow_tripdata"
+  file_format: "parquet"  # Référence à la configuration ci-dessus
+  gcs_folder: "taxi_data/"
+
+# Configuration pour le chargement des données de taxi
+load:
+  destination_table: "raw_yellow_taxi_trips.raw_taxi_data"
+  source_file_column: "source_file"
+  file_format: "parquet"  # Référence à la configuration ci-dessus
+  gcs_folder: "taxi_data/"
+
+# Configuration pour les données météo
+weather:
+  file_format: "csv"  # Référence à la configuration ci-dessus
+  gcs_folder: "weather_data/"
+  stations:
+    - id: JFK
+      name: John F Kennedy
+      zone: queens
+    - id: LGA
+      name: LaGuardia
+      zone: queens
+
+# Configuration pour le chargement des données météo
+load_weather:
+  dataset_id: "weather_data"
+  table_id: "raw_weather_data"
+  table_name: "raw_weather_data"
+  file_format: "csv"  # Référence à la configuration ci-dessus
+  gcs_folder: "weather_data/"
