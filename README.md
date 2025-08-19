@@ -1,102 +1,103 @@
-##  Yellow Taxi MeteoRide:  Analyse corrélative des conditions météorologiques et des trajets en taxi
+# BigQuery Taxi Trips Analysis
 
-## 📝 Présentation du Projet
-Ce projet analyse la corrélation entre les conditions météorologiques et plus de 100 millions de courses de taxi à New York. En exploitant un pipeline ELT sur GCP et une couche de visualisation Power BI, nous transformons des données brutes de trajets et de météo en insights actionnables pour comprendre les patterns de mobilité urbaine en fonction des conditions climatiques. L'objectif est d'offrir une meilleure compréhension de l'influence météorologique sur les comportements de déplacement, permettant ainsi d'optimiser la répartition des taxis selon les conditions atmosphériques observées.
+## Aperçu du Projet
+Ce projet implémente un pipeline ELT (Extract, Load, Transform) pour l'analyse des données de courses de taxi à New York. Il utilise Google Cloud Platform (GCP) pour le stockage et le traitement des données, avec Apache Airflow pour l'orchestration et dbt (Data Build Tool) pour la transformation des données.
 
-**Démo du Tableau de Bord**
-
-![Démonstration du tableau de bord](assets/screencast_dashboard.gif)
-
-
-🔍 **Caractéristiques du Jeu de Données**  
-- **Sources** : NYC Taxi & Limousine Commission (trips CSV), Automated Observation System (AOS, météo horaires)  
-- **Période** : historique mensuel sur plusieurs années  
-- **Volume** : plus de 100 millions de courses et observations météo pour plusieurs dizaines de stations
-
----
-
-## Architecture du système
-Le pipeline suit une architecture ELT robuste sur Google Cloud Platform (GCP) :
+## Architecture du Système
 
 ```
-NYC.gov (trips CSV)  ──┐
-                       │
-Weather API (AOS)   ──>│
-                       │
-                       v
-                Airflow (Orchestration)
-                       │
-                       v
-                GCS (Stockage brut)
-                       │
-                       v
-               BigQuery (tables raw)
-                       │
-                       v
-                    dbt (Transformation)
-                       │
-                       v
-                BigQuery (tables marts)
-                       │
-                       v
-                     Power BI
+NYC TLC Data (CSV)  ──┐
+                      │
+Weather Data (CSV)  ──┘
+        │
+        ▼
+  Google Cloud Storage (GCS)
+        │
+        ▼
+  Apache Airflow (Orchestration)
+        │
+        ▼
+  BigQuery (Données brutes)
+        │
+        ▼
+  dbt (Transformation)
+        │
+        ▼
+  BigQuery (Modèles analytiques)
 ```
 
+## Composants Techniques
 
-## Composants techniques
+### 1. Extraction
+- Téléchargement des données de courses de taxi depuis NYC TLC
+- Récupération des données météorologiques
+- Stockage initial dans Google Cloud Storage (GCS)
 
-### Étape 1 : Extract → GCS  
-- Harvest mensuel automatisé des CSV taxi (NYC.gov) et météo (AOS) via Airflow  
-- Organisation et versioning des dizaines de Go de données dans GCS  
-- Gestion des fichiers bruts avec un partitionnement efficace
+### 2. Chargement
+- Ingestion des données brutes dans BigQuery
+- Création des tables de base pour les trajets et la météo
+- Validation de l'intégrité des données
 
-### Étape 2 : Load → BigQuery  
-- Ingestion dans deux tables **raw** : `trips` et `raw_weather_data`  
-- Surveillance des échecs d’ingestion et gestion des doublons  
-- Contrôles de qualité (format, complétude)
+### 3. Transformation (dbt)
+- Nettoyage et standardisation des données
+- Création de modèles intermédiaires
+- Génération de modèles analytiques (marts)
+- Tests de qualité des données
 
-### Étape 3 : Staging avec dbt  
-- **Nettoyage** : suppression des enregistrements incomplets ou aberrants  
-- **Typage & conversions** : uniformisation des formats (timestamps, unités, géolocation)  
-- **Enrichissement** :  
-  - Dimensions temporelles (heure, jour de semaine)  
-  - Mapping géographique : zone taxi ↔ station météo  
-- **Quality Gates** : tests automatiques (not_null, accepted_values) avant chaque exécution
+### 4. Modèles Principaux
+- `stg_yellow_trips` : Données brutes des courses de taxi nettoyées
+- `stg_weather_data` : Données météorologiques traitées
+- `fct_taxi_trips_with_weather` : Vue unifiée des courses et météo
+- `mart_daily_trips_all` : Agrégations quotidiennes des métriques clés
 
-### Étape 4 : Transform  
-- Création de tables **intermédiaires** classifiant chaque course et observation météo  
-- Isolation des anomalies avant agrégations pour détection précoce des problèmes  
-- **Marts spécialisés** :  
-  - **Data Quality** : suivi des anomalies  
-  - **Full-Volume** : toutes courses pour analyses volumétriques  
-  - **Valid-Only** : courses validées pour dashboards fiables  
-  - **Fact Hourly** : historisation horaire avec 45+ métriques météo  
-  - **Agrégations** partitionnées par date, zone et condition météo
+## Démarrage Rapide
 
-### Étape 5 : Visualisation  
-- Stratégie **Import** vs **DirectQuery** selon les volumétries  
-- Optimisation des requêtes BigQuery pour réduire la latence  
-- Configuration Power BI (rapports, slicers, KPI) pour garantir fluidité et performance
+### Prérequis
+- Compte Google Cloud Platform (GCP)
+- Projet GCP avec BigQuery activé
+- Python 3.8+
+- Docker et Docker Compose
 
----
+### Installation
 
-## Défis techniques résolus
+1. **Cloner le dépôt**
+   ```bash
+   git clone https://github.com/votre-utilisateur/bigquery-taxi-trips.git
+   cd bigquery-taxi-trips
+   ```
 
-- **Asymétrie des données** : courses au pas de minute vs météo à l’heure  
-  **Solution** : partitionnement intelligent synchronisant fenêtres temporelles course/météo  
-  **Résultat** : optimisation des temps de requête et précision des analyses
+2. **Configurer l'environnement**
+   - Mettre à jour les variables d'environnement (yaml)
 
-- **Scalabilité & performance** :  
-  - Tests automatiques à chaque déploiement  
-  - Modèles incrémentaux avec partitionnement  
-  - Macros dbt pour code réutilisable  
-  **Résultat** : pipeline ELT modulable et performant sur GCP
+3. **Démarrer les services**
+   ```bash
+   docker-compose up -d
+   ```
 
-## Contact  
-Pour plus d'informations sur ce projet, veuillez me contacter sur LinkedIn : [François Vercellotti](https://www.linkedin.com/in/fran%C3%A7ois-vercellotti-3687492a8)
+4. **Exécuter le pipeline**
+   - Accéder à l'interface Airflow sur `http://localhost:8080`
+   - Déclencher le DAG `nyc_taxi_elt_pipeline`
 
+## Structure du Projet
 
+```
+.
+├── dags/                  # DAGs Airflow
+├── nyc_taxi_dbt/          # Modèles dbt
+│   ├── models/
+│   │   ├── staging/      # Modèles de staging
+│   │   ├── mart/         # Modèles analytiques
+│   │   └── intermediate/ # Modèles intermédiaires
+│   └── dbt_project.yml   # Configuration dbt
+├── src/                   # Scripts Python
+├── config.yaml           # Configuration de l'application
+└── docker-compose.yml    # Configuration Docker
+```
 
-## Licence  
-Ce projet est sous licence MIT.
+## Licence
 
+Ce projet est sous licence MIT. Voir le fichier `LICENSE` pour plus de détails.
+
+## Contact
+
+Pour toute question ou suggestion, veuillez ouvrir une issue sur ce dépôt.
